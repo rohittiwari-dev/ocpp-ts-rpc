@@ -683,7 +683,7 @@ class RPC_Client extends EventEmitter {
 		reason?: string;
 		awaitPending?: any;
 		force?: any;
-	}) {
+	} = {}) {
 		if (([CLOSED, CLOSING] as Array<number>).includes(this._state)) {
 			// no-op
 			return this._closePromise;

@@ -24,7 +24,11 @@
 		"rpc server",
 		"rpc client",
 		"ocpp rpc",
-		"ocpp websockets"
+		"ocpp websockets",
+		"ocpp rpc typescript",
+		"rpc typescript",
+		"ocpp typescript",
+		"ocpp node js typescript"
 	],
 	"author": {
 		"name": "Rohit Tiwari",
