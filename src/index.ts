@@ -1,3 +1,4 @@
+// Created exports default at index.ts
 import RPCClient from "./lib/client";
 import RPCServer from "./lib/server";
 export { createRPCError } from "./lib/util";
