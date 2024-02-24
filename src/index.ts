@@ -1,5 +1,5 @@
 // Created exports default at index.ts
-import RPCClient from "./lib/client";
+import RPCClient, { IHandlersOption } from "./lib/client";
 import RPCServer from "./lib/server";
 export { createRPCError } from "./lib/util";
 export { createValidator } from "./lib/validator";
@@ -24,4 +24,4 @@ export {
 	UnexpectedHttpResponse,
 	WebsocketUpgradeError,
 } from "./lib/errors";
-export { RPCServer, RPCClient };
+export { RPCServer, RPCClient, IHandlersOption };

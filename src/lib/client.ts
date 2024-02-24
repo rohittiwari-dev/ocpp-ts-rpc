@@ -51,12 +51,26 @@ const MSG_CALL = 2;
 const MSG_CALLRESULT = 3;
 const MSG_CALLERROR = 4;
 
+export interface IHandlersOption {
+	messageId?: string;
+	method?: string;
+	params?: Record<string, any>;
+	signal?: AbortSignal;
+	reply?: unknown;
+}
+type IHandlers = ({
+	params,
+	reply,
+	method,
+	signal,
+	messageId,
+}: IHandlersOption) => Promise<Record<string, any>>;
 // Creating Custom Rpc CLient Emitter
 class RPC_Client extends EventEmitter {
 	// Data Member Declarations
 	_identity?: string;
-	_wildcardHandler: Function | null;
-	_handlers: Map<string, Function>;
+	_wildcardHandler: IHandlers | null;
+	_handlers: Map<string, IHandlers>;
 	_state: number;
 	_callQueue: Queue;
 	_ws?: WebSocket;
@@ -192,11 +206,11 @@ class RPC_Client extends EventEmitter {
 		}
 
 		const missingValidator = this._strictProtocols.find(
-			(protocol) => !this._strictValidators?.has(protocol),
+			(protocol) => !this._strictValidators?.has(protocol)
 		);
 		if (missingValidator) {
 			throw Error(
-				`Missing strictMode validator for subprotocol '${missingValidator}'`,
+				`Missing strictMode validator for subprotocol '${missingValidator}'`
 			);
 		}
 
@@ -221,7 +235,7 @@ class RPC_Client extends EventEmitter {
 			this._options.endpoint +
 			"/" +
 			encodeURIComponent(
-				this._options.identity as string | number | boolean,
+				this._options.identity as string | number | boolean
 			);
 		if (this._options.query) {
 			const searchParams = new URLSearchParams(this._options.query);
@@ -280,7 +294,7 @@ class RPC_Client extends EventEmitter {
 			// setup new abort controller
 			this._keepAliveAbortController = new AbortController();
 
-			while (true) {
+			for (;;) {
 				await once(timerEmitter, "next", {
 					signal: this._keepAliveAbortController.signal,
 				}),
@@ -366,7 +380,7 @@ class RPC_Client extends EventEmitter {
 						authorization: "",
 					},
 				},
-				this._options.wsOpts ?? {},
+				this._options.wsOpts ?? {}
 			);
 
 			Object.assign(wsOpts.headers, this._options.headers);
@@ -388,7 +402,7 @@ class RPC_Client extends EventEmitter {
 			this._ws = new WebSocket(
 				this._connectionUrl,
 				this._protocolOptions,
-				wsOpts,
+				wsOpts
 			);
 
 			const leadMsgBuffer = new EventBuffer(this._ws, "message");
@@ -403,16 +417,16 @@ class RPC_Client extends EventEmitter {
 							response: {
 								statusMessage: string | undefined;
 								statusCode: any;
-							},
+							}
 						) => {
 							const err = new UnexpectedHttpResponse(
-								response.statusMessage,
+								response.statusMessage
 							);
 							err.code = response.statusCode;
 							err.request = request;
 							err.response = response;
 							reject(err);
-						},
+						}
 					);
 					this._ws?.once("upgrade", (response: any) => {
 						upgradeResponse = response;
@@ -473,7 +487,7 @@ class RPC_Client extends EventEmitter {
 	 */
 	_attachWebsocket(ws: WebSocket, leadMsgBuffer?: EventBuffer) {
 		ws.once("close", (code: number, reason: Buffer) =>
-			this._handleDisconnect({ code, reason }),
+			this._handleDisconnect({ code, reason })
 		);
 		ws.on("error", (err: Error) => this.emit("socketError", err));
 		ws.on("ping", () => {
@@ -529,7 +543,7 @@ class RPC_Client extends EventEmitter {
 		const pendingCalls = Array.from(this._pendingCalls.values());
 		const pendingResponses = Array.from(this._pendingResponses.values());
 		[...pendingCalls, ...pendingResponses].forEach((c) =>
-			c.abort(abortReason),
+			c.abort(abortReason)
 		);
 	}
 
@@ -545,7 +559,7 @@ class RPC_Client extends EventEmitter {
 	 */
 	async call(method: any, params?: any, options: Record<string, any> = {}) {
 		return await this._callQueue.push(
-			this._call.bind(this, method, params, options),
+			this._call.bind(this, method, params, options)
 		);
 	}
 
@@ -562,7 +576,7 @@ class RPC_Client extends EventEmitter {
 		if (this._strictProtocols.includes(this._protocol as string)) {
 			// perform some strict-mode checks
 			const validator = this._strictValidators?.get(
-				this._protocol as string,
+				this._protocol as string
 			);
 			try {
 				validator?.validate(`urn:${method}.req`, params);
@@ -624,7 +638,7 @@ class RPC_Client extends EventEmitter {
 					timeoutMs,
 					{
 						signal: timeoutAc.signal,
-					},
+					}
 				);
 			}
 
@@ -707,16 +721,12 @@ class RPC_Client extends EventEmitter {
 					this._ws?.close(code, reason);
 				}
 
-				let [codeRes, reasonRes] = await once(
-					this._ws as WebSocket,
-					"close",
-				);
-
-				if (reasonRes instanceof Buffer) {
-					reasonRes = reasonRes.toString("utf8");
+				const result = await once(this._ws as WebSocket, "close");
+				if (result[1] instanceof Buffer) {
+					result[1] = result[1].toString("utf8");
 				}
 
-				return { code: codeRes, reason: reasonRes };
+				return { code: result[0], reason: result[1] };
 			})();
 
 			this._state = CLOSING;
@@ -777,7 +787,7 @@ class RPC_Client extends EventEmitter {
 				throw createRPCError(
 					"RpcFrameworkError",
 					"Message must be a JSON structure",
-					{},
+					{}
 				);
 			}
 
@@ -785,7 +795,7 @@ class RPC_Client extends EventEmitter {
 				throw createRPCError(
 					"RpcFrameworkError",
 					"Message must be an array",
-					{},
+					{}
 				);
 			}
 
@@ -795,7 +805,7 @@ class RPC_Client extends EventEmitter {
 				throw createRPCError(
 					"RpcFrameworkError",
 					"Message type must be a number",
-					{},
+					{}
 				);
 			}
 
@@ -803,13 +813,13 @@ class RPC_Client extends EventEmitter {
 			// (see section 4.4 of OCPP2.0.1J)
 			if (
 				![MSG_CALL, MSG_CALLERROR, MSG_CALLRESULT].includes(
-					messageTypePart,
+					messageTypePart
 				)
 			) {
 				throw createRPCError(
 					"MessageTypeNotSupported",
 					"Unrecognised message type",
-					{},
+					{}
 				);
 			}
 
@@ -819,39 +829,41 @@ class RPC_Client extends EventEmitter {
 				throw createRPCError(
 					"RpcFrameworkError",
 					"Message ID must be a string",
-					{},
+					{}
 				);
 			}
 
 			msgId = msgIdPart;
-
+			let method: string,
+				params: Record<string, any>,
+				result: unknown,
+				errorCode: string,
+				errorDescription: string,
+				errorDetails: Record<string, any>;
 			switch (messageType) {
 				case MSG_CALL:
-					const [method, params] = more;
-					if (typeof method !== "string") {
-						throw new RPCFrameworkError("Method must be a string");
-					}
+					[method, params] = more;
 					this.emit("call", { outbound: false, payload });
 					this._onCall(msgId, method, params);
 					break;
 				case MSG_CALLRESULT:
-					const [result] = more;
+					[result] = more;
 					this.emit("response", { outbound: false, payload });
 					this._onCallResult(msgId, result);
 					break;
 				case MSG_CALLERROR:
-					const [errorCode, errorDescription, errorDetails] = more;
+					[errorCode, errorDescription, errorDetails] = more;
 					this.emit("response", { outbound: false, payload });
 					this._onCallError(
 						msgId,
 						errorCode,
 						errorDescription,
-						errorDetails,
+						errorDetails
 					);
 					break;
 				default:
 					throw new RPCMessageTypeNotSupportedError(
-						`Unexpected message type: ${messageType}`,
+						`Unexpected message type: ${messageType}`
 					);
 			}
 
@@ -915,26 +927,26 @@ class RPC_Client extends EventEmitter {
 					throw createRPCError(
 						"RpcFrameworkError",
 						`Already processing a call with message ID: ${msgId}`,
-						{},
+						{}
 					);
 				}
 				let handler = this._handlers.get(method);
 				if (!handler) {
-					handler = this._wildcardHandler as Function;
+					handler = this._wildcardHandler as IHandlers;
 				}
 
 				if (!handler) {
 					throw createRPCError(
 						"NotImplemented",
 						`Unable to handle '${method}' calls`,
-						{},
+						{}
 					);
 				}
 
 				if (this._strictProtocols.includes(this._protocol as string)) {
 					// perform some strict-mode checks
 					const validator = this._strictValidators?.get(
-						this._protocol as string,
+						this._protocol as string
 					);
 					try {
 						validator?.validate(`urn:${method}.req`, params);
@@ -953,7 +965,7 @@ class RPC_Client extends EventEmitter {
 				}
 
 				const ac = new AbortController();
-				const callPromise = new Promise(async (resolve, reject) => {
+				const callPromise = new Promise((resolve, reject) => {
 					function reply(val: unknown) {
 						if (val instanceof Error) {
 							reject(val);
@@ -965,13 +977,13 @@ class RPC_Client extends EventEmitter {
 					try {
 						if (handler) {
 							reply(
-								await handler({
+								handler({
 									messageId: msgId,
 									method,
 									params,
 									signal: ac.signal,
 									reply,
-								}),
+								})
 							);
 						} else {
 							throw new Error("Handler is not defined");
@@ -1005,7 +1017,7 @@ class RPC_Client extends EventEmitter {
 				if (this._strictProtocols.includes(this._protocol as any)) {
 					// perform some strict-mode checks
 					const validator = this._strictValidators?.get(
-						this._protocol as string,
+						this._protocol as string
 					);
 					try {
 						validator?.validate(`urn:${method}.conf`, result);
@@ -1077,12 +1089,12 @@ class RPC_Client extends EventEmitter {
 			if (this._strictProtocols.includes(this._protocol as string)) {
 				// perform some strict-mode checks
 				const validator = this._strictValidators?.get(
-					this._protocol as string,
+					this._protocol as string
 				);
 				try {
 					validator?.validate(
 						`urn:${pendingCall.method}.conf`,
-						result,
+						result
 					);
 				} catch (error) {
 					this.emit("strictValidationFailure", {
@@ -1106,7 +1118,7 @@ class RPC_Client extends EventEmitter {
 				{
 					msgId,
 					result,
-				},
+				}
 			);
 		}
 	}
@@ -1114,14 +1126,14 @@ class RPC_Client extends EventEmitter {
 		msgId: string,
 		errorCode: string,
 		errorDescription: string,
-		errorDetails: Record<string, any>,
+		errorDetails: Record<string, any>
 	) {
 		const pendingCall = this._pendingCalls.get(msgId);
 		if (pendingCall) {
 			const err = createRPCError(
 				errorCode,
 				errorDescription,
-				errorDetails,
+				errorDetails
 			);
 			pendingCall.reject(err);
 		} else {
@@ -1133,7 +1145,7 @@ class RPC_Client extends EventEmitter {
 					errorCode,
 					errorDescription,
 					errorDetails,
-				},
+				}
 			);
 		}
 	}
@@ -1175,14 +1187,11 @@ class RPC_Client extends EventEmitter {
 	 * @param {string} [method] - The name of the RPC method to handle.
 	 * @param {Function} handler - A function that can handle incoming calls for this method.
 	 */
-	handle(
-		method: string | Function,
-		handler?: ({ params, signal }: { params: any; signal: any }) => void,
-	) {
+	handle(method: string | IHandlers, handler?: IHandlers) {
 		if (method instanceof Function && !handler) {
 			this._wildcardHandler = method;
 		} else {
-			this._handlers.set(method as string, handler as Function);
+			this._handlers.set(method as string, handler as IHandlers);
 		}
 	}
 }

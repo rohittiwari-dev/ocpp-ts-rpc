@@ -48,11 +48,11 @@ class RPCServer extends EventEmitter {
 	authCallback!: (
 		accept: (
 			session?: Record<string, any>,
-			protocol?: string | false,
+			protocol?: string | false
 		) => void,
 		reject: (code: number, message: string) => void,
 		handshake: IHandshakeInterface,
-		signal: AbortSignal,
+		signal: AbortSignal
 	) => void;
 
 	// Websocket Constructor
@@ -84,14 +84,14 @@ class RPCServer extends EventEmitter {
 			noServer: true,
 			handleProtocols: (protocols, request) => {
 				const { protocol } = this._pendingUpgrades.get(
-					request,
+					request
 				) as TPendingUpgrades;
 				return protocol;
 			},
 		});
 
 		this._wss.on("headers", (h: any) =>
-			h.push(`Server: ${getPackageIdent()}`),
+			h.push(`Server: ${getPackageIdent()}`)
 		);
 		this._wss.on("error", (err: any) => this.emit("error", err));
 		this._wss.on("connection", this._onConnection.bind(this));
@@ -122,11 +122,11 @@ class RPCServer extends EventEmitter {
 		}
 
 		const missingValidator = strictProtocols.find(
-			(protocol: any) => !this._strictValidators.has(protocol),
+			(protocol: any) => !this._strictValidators.has(protocol)
 		);
 		if (missingValidator) {
 			throw Error(
-				`Missing strictMode validator for subprotocol '${missingValidator}'`,
+				`Missing strictMode validator for subprotocol '${missingValidator}'`
 			);
 		}
 
@@ -140,7 +140,7 @@ class RPCServer extends EventEmitter {
 			}
 
 			const { handshake, session } = this._pendingUpgrades.get(
-				request,
+				request
 			) as TPendingUpgrades;
 
 			const client = new RpcServerClient(
@@ -162,7 +162,7 @@ class RPCServer extends EventEmitter {
 					ws: websocket,
 					session,
 					handshake,
-				},
+				}
 			);
 
 			this._clients.add(client);
@@ -177,7 +177,7 @@ class RPCServer extends EventEmitter {
 		return async (
 			request: IncomingMessage,
 			socket: Socket,
-			head: Buffer,
+			head: Buffer
 		) => {
 			let resolved = false;
 			const url = new URL("http://localhost" + (request.url || "/"));
@@ -205,15 +205,15 @@ class RPCServer extends EventEmitter {
 				if (headers.upgrade?.toLowerCase() !== "websocket") {
 					throw new WebsocketUpgradeError(
 						400,
-						"Can only upgrade websocket upgrade requests",
+						"Can only upgrade websocket upgrade requests"
 					);
 				}
 
 				const protocols =
 					"sec-websocket-protocol" in headers
 						? parseSubprotocols(
-								headers["sec-websocket-protocol"] as string,
-						  )
+								headers["sec-websocket-protocol"] as string
+							)
 						: new Set<string>();
 
 				const handshake: IHandshakeInterface = {
@@ -227,8 +227,8 @@ class RPCServer extends EventEmitter {
 					password: headers.authorization
 						? Buffer.from(
 								headers.authorization.split(" ")[1],
-								"base64",
-						  )
+								"base64"
+							)
 						: undefined,
 				};
 
@@ -240,13 +240,13 @@ class RPCServer extends EventEmitter {
 						if (socket.readyState !== "open") {
 							throw new WebsocketUpgradeError(
 								400,
-								`Client readyState = '${socket.readyState}'`,
+								`Client readyState = '${socket.readyState}'`
 							);
 						}
 
 						if (protocol === undefined) {
 							protocol = (this._options.protocols ?? []).find(
-								(p) => protocols.has(p),
+								(p) => protocols.has(p)
 							);
 						} else if (
 							protocol !== false &&
@@ -254,7 +254,7 @@ class RPCServer extends EventEmitter {
 						) {
 							throw new WebsocketUpgradeError(
 								400,
-								`Client doesn't support expected subprotocol`,
+								`Client doesn't support expected subprotocol`
 							);
 						}
 
@@ -270,7 +270,7 @@ class RPCServer extends EventEmitter {
 							head,
 							(ws: WebSocket) => {
 								this._wss.emit("connection", ws, request);
-							},
+							}
 						);
 					} catch (err) {
 						abortUpgrade(err);
@@ -286,14 +286,14 @@ class RPCServer extends EventEmitter {
 				socket.once("end", () => {
 					reject(
 						400,
-						`Client connection closed before upgrade complete`,
+						`Client connection closed before upgrade complete`
 					);
 				});
 
 				socket.once("close", () => {
 					reject(
 						400,
-						`Client connection closed before upgrade complete`,
+						`Client connection closed before upgrade complete`
 					);
 				});
 
@@ -312,12 +312,12 @@ class RPCServer extends EventEmitter {
 		cb: (
 			accept: (
 				session?: Record<string, any>,
-				protocol?: string | false,
+				protocol?: string | false
 			) => void,
 			reject: (code: number, message: string) => void,
 			handshake: IHandshakeInterface,
-			signal?: AbortSignal,
-		) => void,
+			signal?: AbortSignal
+		) => void
 	) {
 		this.authCallback = cb;
 	}
@@ -338,11 +338,11 @@ class RPCServer extends EventEmitter {
 				res.setHeader("Server", getPackageIdent());
 				res.statusCode = 404;
 				res.end();
-			},
+			}
 		);
 		httpServer.on("upgrade", this.handleUpgrade);
 		httpServer.once("close", () =>
-			this._httpServerAbortControllers.delete(ac),
+			this._httpServerAbortControllers.delete(ac)
 		);
 		await new Promise((resolve, reject) => {
 			return (httpServer as any).listen(
@@ -351,7 +351,7 @@ class RPCServer extends EventEmitter {
 					host,
 					signal: ac.signal,
 				},
-				(err?: any) => (err ? reject(err) : resolve("")),
+				(err?: any) => (err ? reject(err) : resolve(""))
 			) as Server;
 		});
 		return httpServer;
@@ -363,14 +363,14 @@ class RPCServer extends EventEmitter {
 			this.emit("closing");
 			code = code ?? 1001;
 			await Array.from(this._clients).map((cli: any) =>
-				cli.close({ code, reason, awaitPending, force }),
+				cli.close({ code, reason, awaitPending, force })
 			);
 			await new Promise((resolve, reject) => {
 				this._wss.close((err: any) =>
-					err ? reject(err) : resolve(""),
+					err ? reject(err) : resolve("")
 				);
 				this._httpServerAbortControllers.forEach((ac: any) =>
-					ac.abort("Closing"),
+					ac.abort("Closing")
 				);
 			});
 			this._state = CLOSED;
