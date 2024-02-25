@@ -68,23 +68,23 @@ type IHandlers = ({
 // Creating Custom Rpc CLient Emitter
 class RPC_Client extends EventEmitter {
 	// Data Member Declarations
-	_identity?: string;
-	_wildcardHandler: IHandlers | null;
-	_handlers: Map<string, IHandlers>;
-	_state: number;
-	_callQueue: Queue;
-	_ws?: WebSocket;
-	_wsAbortController?: AbortController;
-	_keepAliveAbortController?: AbortController;
-	_pendingPingResponse: boolean;
-	_lastPingTime: number;
-	_closePromise?: Promise<{ code: number; reason: string }>;
-	_protocolOptions: string[];
-	_protocol?: string;
-	_strictProtocols: string[];
-	_strictValidators?: Map<string, Validator>;
-	_pendingCalls: Map<string, Record<string, any>>;
-	_pendingResponses: Map<
+	protected _identity?: string;
+	private _wildcardHandler: IHandlers | null;
+	private _handlers: Map<string, IHandlers>;
+	protected _state: number;
+	private _callQueue: Queue;
+	protected _ws?: WebSocket;
+	private _wsAbortController?: AbortController;
+	private _keepAliveAbortController?: AbortController;
+	private _pendingPingResponse: boolean;
+	private _lastPingTime: number;
+	private _closePromise?: Promise<{ code: number; reason: string }>;
+	private _protocolOptions: string[];
+	protected _protocol?: string;
+	private _strictProtocols: string[];
+	private _strictValidators?: Map<string, Validator>;
+	private _pendingCalls: Map<string, Record<string, any>>;
+	private _pendingResponses: Map<
 		string,
 		{
 			abort: {
@@ -94,15 +94,15 @@ class RPC_Client extends EventEmitter {
 			promise: Promise<any>;
 		}
 	>;
-	_outboundMsgBuffer: string[];
-	_connectedOnce: boolean;
-	_backoffStrategy?: ExponentialStrategy;
-	_badMessagesCount: number;
-	_reconnectAttempt: number;
-	_options: RPC_ClientOptions;
-	_connectionUrl!: string;
-	_connectPromise!: Promise<{ response: any }>;
-	_nextPingTimeout!: NodeJS.Timeout;
+	private _outboundMsgBuffer: string[];
+	private _connectedOnce: boolean;
+	private _backoffStrategy?: ExponentialStrategy;
+	private _badMessagesCount: number;
+	private _reconnectAttempt: number;
+	protected _options: RPC_ClientOptions;
+	private _connectionUrl!: string;
+	private _connectPromise!: Promise<{ response: any }>;
+	private _nextPingTimeout!: NodeJS.Timeout;
 	// Static Declaration of data members
 	static OPEN: number;
 	static CONNECTING: number;
@@ -206,11 +206,11 @@ class RPC_Client extends EventEmitter {
 		}
 
 		const missingValidator = this._strictProtocols.find(
-			(protocol) => !this._strictValidators?.has(protocol)
+			(protocol) => !this._strictValidators?.has(protocol),
 		);
 		if (missingValidator) {
 			throw Error(
-				`Missing strictMode validator for subprotocol '${missingValidator}'`
+				`Missing strictMode validator for subprotocol '${missingValidator}'`,
 			);
 		}
 
@@ -235,7 +235,7 @@ class RPC_Client extends EventEmitter {
 			this._options.endpoint +
 			"/" +
 			encodeURIComponent(
-				this._options.identity as string | number | boolean
+				this._options.identity as string | number | boolean,
 			);
 		if (this._options.query) {
 			const searchParams = new URLSearchParams(this._options.query);
@@ -266,7 +266,7 @@ class RPC_Client extends EventEmitter {
 		}
 	}
 
-	async _keepAlive() {
+	private async _keepAlive() {
 		// abort any previously running keepAlive
 		this._keepAliveAbortController?.abort();
 
@@ -326,7 +326,7 @@ class RPC_Client extends EventEmitter {
 		}
 	}
 
-	async _tryReconnect() {
+	private async _tryReconnect() {
 		this._reconnectAttempt++;
 		if (this._reconnectAttempt > this._options.maxReconnects) {
 			// give up
@@ -366,7 +366,7 @@ class RPC_Client extends EventEmitter {
 		}
 	}
 
-	_beginConnect() {
+	private _beginConnect() {
 		this._connectPromise = (async () => {
 			this._wsAbortController = new AbortController();
 
@@ -380,7 +380,7 @@ class RPC_Client extends EventEmitter {
 						authorization: "",
 					},
 				},
-				this._options.wsOpts ?? {}
+				this._options.wsOpts ?? {},
 			);
 
 			Object.assign(wsOpts.headers, this._options.headers);
@@ -402,7 +402,7 @@ class RPC_Client extends EventEmitter {
 			this._ws = new WebSocket(
 				this._connectionUrl,
 				this._protocolOptions,
-				wsOpts
+				wsOpts,
 			);
 
 			const leadMsgBuffer = new EventBuffer(this._ws, "message");
@@ -417,16 +417,16 @@ class RPC_Client extends EventEmitter {
 							response: {
 								statusMessage: string | undefined;
 								statusCode: any;
-							}
+							},
 						) => {
 							const err = new UnexpectedHttpResponse(
-								response.statusMessage
+								response.statusMessage,
 							);
 							err.code = response.statusCode;
 							err.request = request;
 							err.response = response;
 							reject(err);
-						}
+						},
 					);
 					this._ws?.once("upgrade", (response: any) => {
 						upgradeResponse = response;
@@ -485,9 +485,9 @@ class RPC_Client extends EventEmitter {
 	 * @param {WebSocket} ws - A WebSocket instance
 	 * @param {EventBuffer} leadMsgBuffer - A buffer which traps all 'message' events
 	 */
-	_attachWebsocket(ws: WebSocket, leadMsgBuffer?: EventBuffer) {
+	protected _attachWebsocket(ws: WebSocket, leadMsgBuffer?: EventBuffer) {
 		ws.once("close", (code: number, reason: Buffer) =>
-			this._handleDisconnect({ code, reason })
+			this._handleDisconnect({ code, reason }),
 		);
 		ws.on("error", (err: Error) => this.emit("socketError", err));
 		ws.on("ping", () => {
@@ -515,7 +515,13 @@ class RPC_Client extends EventEmitter {
 		});
 	}
 
-	_handleDisconnect({ code, reason }: { code: number; reason: Buffer }) {
+	private _handleDisconnect({
+		code,
+		reason,
+	}: {
+		code: number;
+		reason: Buffer;
+	}) {
 		let reasonString: string = "";
 		if (reason instanceof Buffer) {
 			reasonString = reason.toString("utf8");
@@ -539,11 +545,11 @@ class RPC_Client extends EventEmitter {
 			this.emit("close", { code, reasonString });
 		}
 	}
-	_rejectPendingCalls(abortReason: string) {
+	private _rejectPendingCalls(abortReason: string) {
 		const pendingCalls = Array.from(this._pendingCalls.values());
 		const pendingResponses = Array.from(this._pendingResponses.values());
 		[...pendingCalls, ...pendingResponses].forEach((c) =>
-			c.abort(abortReason)
+			c.abort(abortReason),
 		);
 	}
 
@@ -559,11 +565,15 @@ class RPC_Client extends EventEmitter {
 	 */
 	async call(method: any, params?: any, options: Record<string, any> = {}) {
 		return await this._callQueue.push(
-			this._call.bind(this, method, params, options)
+			this._call.bind(this, method, params, options),
 		);
 	}
 
-	async _call(method: any, params: any, options: Record<string, any> = {}) {
+	private async _call(
+		method: any,
+		params: any,
+		options: Record<string, any> = {},
+	) {
 		const timeoutMs = options.callTimeoutMs ?? this._options.callTimeoutMs;
 
 		if (([CLOSED, CLOSING] as Array<number>).includes(this._state)) {
@@ -576,7 +586,7 @@ class RPC_Client extends EventEmitter {
 		if (this._strictProtocols.includes(this._protocol as string)) {
 			// perform some strict-mode checks
 			const validator = this._strictValidators?.get(
-				this._protocol as string
+				this._protocol as string,
 			);
 			try {
 				validator?.validate(`urn:${method}.req`, params);
@@ -638,7 +648,7 @@ class RPC_Client extends EventEmitter {
 					timeoutMs,
 					{
 						signal: timeoutAc.signal,
-					}
+					},
 				);
 			}
 
@@ -746,7 +756,7 @@ class RPC_Client extends EventEmitter {
 			return result;
 		}
 	}
-	async _awaitUntilPendingSettled() {
+	private async _awaitUntilPendingSettled() {
 		const pendingCalls = Array.from(this._pendingCalls.values());
 		const pendingResponses = Array.from(this._pendingResponses.values());
 		return await Promise.allSettled([
@@ -754,14 +764,14 @@ class RPC_Client extends EventEmitter {
 			...pendingCalls.map((c) => c.promise),
 		]);
 	}
-	_deferNextPing() {
+	private _deferNextPing() {
 		if (!this._nextPingTimeout) {
 			return;
 		}
 		this._nextPingTimeout.refresh();
 	}
 
-	_onMessage(buffer: Buffer) {
+	private _onMessage(buffer: Buffer) {
 		if (this._options.deferPingsOnActivity) {
 			this._deferNextPing();
 		}
@@ -787,7 +797,7 @@ class RPC_Client extends EventEmitter {
 				throw createRPCError(
 					"RpcFrameworkError",
 					"Message must be a JSON structure",
-					{}
+					{},
 				);
 			}
 
@@ -795,7 +805,7 @@ class RPC_Client extends EventEmitter {
 				throw createRPCError(
 					"RpcFrameworkError",
 					"Message must be an array",
-					{}
+					{},
 				);
 			}
 
@@ -805,7 +815,7 @@ class RPC_Client extends EventEmitter {
 				throw createRPCError(
 					"RpcFrameworkError",
 					"Message type must be a number",
-					{}
+					{},
 				);
 			}
 
@@ -813,13 +823,13 @@ class RPC_Client extends EventEmitter {
 			// (see section 4.4 of OCPP2.0.1J)
 			if (
 				![MSG_CALL, MSG_CALLERROR, MSG_CALLRESULT].includes(
-					messageTypePart
+					messageTypePart,
 				)
 			) {
 				throw createRPCError(
 					"MessageTypeNotSupported",
 					"Unrecognised message type",
-					{}
+					{},
 				);
 			}
 
@@ -829,7 +839,7 @@ class RPC_Client extends EventEmitter {
 				throw createRPCError(
 					"RpcFrameworkError",
 					"Message ID must be a string",
-					{}
+					{},
 				);
 			}
 
@@ -858,12 +868,12 @@ class RPC_Client extends EventEmitter {
 						msgId,
 						errorCode,
 						errorDescription,
-						errorDetails
+						errorDetails,
 					);
 					break;
 				default:
 					throw new RPCMessageTypeNotSupportedError(
-						`Unexpected message type: ${messageType}`
+						`Unexpected message type: ${messageType}`,
 					);
 			}
 
@@ -914,7 +924,7 @@ class RPC_Client extends EventEmitter {
 			}
 		}
 	}
-	async _onCall(msgId: string, method: string, params: any) {
+	private async _onCall(msgId: string, method: string, params: any) {
 		try {
 			let payload;
 
@@ -927,7 +937,7 @@ class RPC_Client extends EventEmitter {
 					throw createRPCError(
 						"RpcFrameworkError",
 						`Already processing a call with message ID: ${msgId}`,
-						{}
+						{},
 					);
 				}
 				let handler = this._handlers.get(method);
@@ -939,14 +949,14 @@ class RPC_Client extends EventEmitter {
 					throw createRPCError(
 						"NotImplemented",
 						`Unable to handle '${method}' calls`,
-						{}
+						{},
 					);
 				}
 
 				if (this._strictProtocols.includes(this._protocol as string)) {
 					// perform some strict-mode checks
 					const validator = this._strictValidators?.get(
-						this._protocol as string
+						this._protocol as string,
 					);
 					try {
 						validator?.validate(`urn:${method}.req`, params);
@@ -983,7 +993,7 @@ class RPC_Client extends EventEmitter {
 									params,
 									signal: ac.signal,
 									reply,
-								})
+								}),
 							);
 						} else {
 							throw new Error("Handler is not defined");
@@ -1017,7 +1027,7 @@ class RPC_Client extends EventEmitter {
 				if (this._strictProtocols.includes(this._protocol as any)) {
 					// perform some strict-mode checks
 					const validator = this._strictValidators?.get(
-						this._protocol as string
+						this._protocol as string,
 					);
 					try {
 						validator?.validate(`urn:${method}.conf`, result);
@@ -1083,18 +1093,18 @@ class RPC_Client extends EventEmitter {
 			this.close({ code: 1000, reason: "Unable to send call result" });
 		}
 	}
-	_onCallResult(msgId: string, result: any) {
+	private _onCallResult(msgId: string, result: any) {
 		const pendingCall = this._pendingCalls.get(msgId);
 		if (pendingCall) {
 			if (this._strictProtocols.includes(this._protocol as string)) {
 				// perform some strict-mode checks
 				const validator = this._strictValidators?.get(
-					this._protocol as string
+					this._protocol as string,
 				);
 				try {
 					validator?.validate(
 						`urn:${pendingCall.method}.conf`,
-						result
+						result,
 					);
 				} catch (error) {
 					this.emit("strictValidationFailure", {
@@ -1118,22 +1128,22 @@ class RPC_Client extends EventEmitter {
 				{
 					msgId,
 					result,
-				}
+				},
 			);
 		}
 	}
-	_onCallError(
+	private _onCallError(
 		msgId: string,
 		errorCode: string,
 		errorDescription: string,
-		errorDetails: Record<string, any>
+		errorDetails: Record<string, any>,
 	) {
 		const pendingCall = this._pendingCalls.get(msgId);
 		if (pendingCall) {
 			const err = createRPCError(
 				errorCode,
 				errorDescription,
-				errorDetails
+				errorDetails,
 			);
 			pendingCall.reject(err);
 		} else {
@@ -1145,7 +1155,7 @@ class RPC_Client extends EventEmitter {
 					errorCode,
 					errorDescription,
 					errorDetails,
-				}
+				},
 			);
 		}
 	}

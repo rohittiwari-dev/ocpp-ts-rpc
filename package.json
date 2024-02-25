@@ -2,10 +2,11 @@
 	"name": "ocpp-rpc-ts",
 	"version": "1.0.0",
 	"description": "A Node.js client & server implementation of the WAMP-like RPC-over-websocket system defined in the OCPP-J protocols. Inspired By @mikuso/ocpp-rpc",
-	"main": "dist/index.js",
+	"main": "dist/serverExample.js",
 	"scripts": {
-		"dev": "ts-node-dev --respawn --transpile-only server.ts",
-		"build": "tsc"
+		"dev": "ts-node-dev --respawn --transpile-only src/serverExample.ts",
+		"build": "tsc && copyfiles -f ./src/lib/schemas/* ./dist/lib/schemas/",
+		"start": "node dist/serverExample.js"
 	},
 	"engines": {
 		"node": ">=17.3.0"
@@ -43,6 +44,7 @@
 	"devDependencies": {
 		"@types/backoff": "^2.5.5",
 		"@types/node": "^20.11.19",
+		"copyfiles": "^2.4.1",
 		"nyc": "^15.1.0",
 		"ts-node-dev": "^2.0.0",
 		"typescript": "^5.3.3"

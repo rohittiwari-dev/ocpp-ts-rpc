@@ -1,7 +1,7 @@
 class Queue {
-	_pending: number;
-	_concurrency: number;
-	_queue: any[];
+	private _pending: number;
+	private _concurrency: number;
+	private _queue: any[];
 	constructor() {
 		this._pending = 0;
 		this._concurrency = Infinity;
@@ -25,7 +25,7 @@ class Queue {
 		});
 	}
 
-	async _next() {
+	private async _next() {
 		if (this._pending >= this._concurrency) {
 			return false;
 		}

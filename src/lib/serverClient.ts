@@ -14,8 +14,8 @@ export interface IHandshakeInterface {
 }
 
 class RpcServerClient extends RPC_Client {
-	_session: Record<string, any>;
-	_handshake: IHandshakeInterface;
+	private _session: Record<string, any>;
+	private _handshake: IHandshakeInterface;
 	constructor(
 		{ ...options }: RPC_ClientOptions,
 		{

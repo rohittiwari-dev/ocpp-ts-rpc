@@ -1,10 +1,10 @@
 import { EventEmitter } from "stream";
 
 class EventBuffer {
-	_emitter: EventEmitter;
-	_event: string | symbol;
-	_collector: (...args: any) => void;
-	_buffer: any;
+	private _emitter: EventEmitter;
+	private _event: string | symbol;
+	private _collector: (...args: any) => void;
+	private _buffer: any;
 	constructor(emitter: EventEmitter, event: string | symbol) {
 		this._emitter = emitter;
 		this._event = event;
