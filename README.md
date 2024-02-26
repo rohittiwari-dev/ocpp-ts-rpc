@@ -40,6 +40,13 @@
     npm start
     ```
 
+4. **Testing**
+    ```bash
+    goto :
+    paste : websocket url from terminal to url field
+    connect and simulate the events and verify in terminal
+    ```
+
 ## Usage
 
 Import the client or server classes and initialize them with the appropriate configurations. See the examples directory for usage examples.

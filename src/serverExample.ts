@@ -63,4 +63,8 @@ server.on("client", async (client) => {
 
 server.listen(3000).then(() => {
 	console.log("🟢 Server Started at Port : ", 3000);
+	console.log("🟢 Websocket Url : ws://localhost:", 3000);
+	console.info(
+		"Just Add this url to your charger or charger simulator,\neg : ws://localhost:{port}/{chargerId}",
+	);
 });
