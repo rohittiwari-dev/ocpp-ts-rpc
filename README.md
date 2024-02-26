@@ -42,7 +42,7 @@
 
 4. **Testing**
     ```bash
-    goto :
+    goto : https://rohittiwari-dev.github.io/ocpp-ts-rpc/
     paste : websocket url from terminal to url field
     connect and simulate the events and verify in terminal
     ```
